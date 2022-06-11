@@ -1,0 +1,165 @@
+clc;close all;
+
+path = 'OBJ_Train_Datasets/Train_Images';
+path2 = [path, '/'];
+imgpath = strcat(path2, string(gTruth_labeler.T_file));
+
+imgDS = imageDatastore(imgpath);
+bboxDS = boxLabelDatastore(gTruth_labeler(:,2:end));
+segDS = imageDatastore("augmentation/mask");
+
+trainingData = combine(imgDS,bboxDS,segDS);
+
+
+%Augmentation
+Inum = numel(imgDS.Files);
+
+for i = 2 : 10
+    augmentedTrainingData = transform(trainingData,@augmentData);
+    
+    augmentedData = cell(4,1);
+    for k = 1 : Inum
+        data = read(augmentedTrainingData);
+        
+        augmentedData{k} = data{1};
+%         compare = insertShape(data{1},'Rectangle',data{2},'Color','green','LineWidth',3);
+
+        data{4} = im2gray(data{4});
+        data{4}(data{4} < 20) = 0;
+        data{4}(data{4} > 0) = 255;
+
+        CC = bwconncomp(data{4});
+        L = labelmatrix(CC);
+        numObjects = max(L(:));
+
+        [idx] = find(L > 0);
+        augmentedData_white = augmentedData{k};
+
+
+
+        augmentedData_whitered = augmentedData_white(:,:,1);
+        augmentedData_whitegreen = augmentedData_white(:,:,2);
+        augmentedData_whiteblue = augmentedData_white(:,:,3);
+
+
+        idxx = ((augmentedData_whitered > 220) & (augmentedData_whitegreen > 220) & (augmentedData_whiteblue > 220));
+        if (isempty(find(idxx > 0, 1)))
+            redmean = 200;
+            greenmean = 200;
+            bluemean = 200;
+        else
+            redmean = mean(augmentedData_whitered(idxx), "all");
+            greenmean = mean(augmentedData_whitegreen(idxx), "all");
+            bluemean = mean(augmentedData_whiteblue(idxx), "all");
+        end
+        
+        
+
+        augmentedData_whitered(idx) = redmean;
+        augmentedData_whitegreen(idx) = greenmean;
+        augmentedData_whiteblue(idx) = bluemean;
+
+
+        augmentedData_white(:,:,1) = augmentedData_whitered(:,:);
+        augmentedData_white(:,:,2) = augmentedData_whitegreen(:,:);
+        augmentedData_white(:,:,3) = augmentedData_whiteblue(:,:);
+
+
+
+        Isize = size(augmentedData{k});
+        [~, name, ~] = fileparts(imgDS.Files(k));
+        imwrite(augmentedData{k}, 'augmentation/images/' + append(name, '_', string(i), '.jpg'), 'jp2', 'Mode', 'lossless');
+        imwrite(augmentedData_white, 'augmentation/images/' + append(name, '_', string(i), 'w', '.jpg'), 'jp2', 'Mode', 'lossless');
+%         imwrite(data{4}, 'augmentation/images/' + append('mask_', name, '_', string(i), 'w', '.jpg'), 'jp2', 'Mode', 'lossless');
+
+
+        fileID = fopen('data/labels/' + append(name, '_', string(i), '.txt'),'w');
+
+        for j = 1 : numObjects
+
+            [y, x] = ind2sub(CC.ImageSize, CC.PixelIdxList{j});
+            LU_x = min(x);
+            LU_y = min(y);
+            RD_x = max(x);
+            RD_y = max(y);
+%             rectangle('Position', [LU_x, LU_y, RD_x - LU_x, RD_y - LU_y],'EdgeColor','r','LineWidth',2);
+%             compare = insertShape(compare, 'Rectangle', [LU_x, LU_y, RD_x - LU_x, RD_y - LU_y],'Color','red','LineWidth',3);
+
+            a = (LU_x + (RD_x - LU_x)/2)/Isize(2);
+            b = (LU_y + (RD_y - LU_y)/2)/Isize(1);
+            c = (RD_x - LU_x)/Isize(2);
+            d = (RD_y - LU_y)/Isize(1);
+            fprintf(fileID, '0 %1.10f %1.10f %1.10f %1.10f\n', a, b, c, d);
+            
+        end
+
+        fclose(fileID);
+
+
+%         figure
+%         imshow(compare)
+% 
+%         figure
+%         imshow(data{4})
+% 
+%         figure
+%         imshow(augmentedData_white)
+
+    
+    end
+
+    reset(augmentedTrainingData);
+
+
+end
+
+% =============================================================================
+function data = augmentData(A)
+
+data = cell(size(A));
+for ii = 1:size(A,1)
+    I = A{ii,1};
+    bboxes = A{ii,2};
+    labels = A{ii,3};
+
+    mask = A{ii, 4};
+
+    sz = size(I);
+
+    if numel(sz) == 3 && sz(3) == 3
+        I = jitterColorHSV(I, contrast=0.2, Hue=0.1, Saturation=0.2, Brightness=0.3);
+    end
+    
+    % Randomly flip image.
+    tform = randomAffine2d( ...
+        XReflection=true, ...
+        YReflection=true, ...
+        Rotation=[-30 30], ...
+        Scale=[1 1.5], ...
+        XShear=[0 20], ...
+        YShear=[0 20], ...
+        XTranslation=[0 0], ...
+        YTranslation=[0 0]);
+%     tform = randomAffine2d( ...
+%         XReflection=true);
+%     disp(tform.T);
+    rout = affineOutputView(sz,tform,BoundsStyle="centerOutput");
+    I = imwarp(I,tform,OutputView=rout);
+    mask = imwarp(mask, tform, OutputView=rout);
+
+    
+    % Apply same transform to boxes.
+    [bboxes,indices] = bboxwarp(bboxes,tform,rout,OverlapThreshold=0.25);
+    labels = labels(indices);
+    
+    % Return original data only when all boxes are removed by warping.
+    if isempty(indices)
+
+        data(ii,:) = A(ii,:);
+    else
+        data(ii,:) = {I,bboxes,labels,mask};
+    end
+
+end
+
+end
