@@ -39,7 +39,7 @@ for i = 1 : 10
         [~, name, ~] = fileparts(imgDS.Files(k));
         imwrite(augmentedData{k}, 'augmentation/images/' + append(name, '_', string(i), '.jpg'), 'jp2', 'Mode', 'lossless');
 
-        fileID = fopen('augmentation/labels/' + append(name, '_', string(i), '.txt'),'w');
+        fileID = fopen('data/labels/' + append(name, '_', string(i), '.txt'),'w');
 
         for j = 1 : numObjects
 
