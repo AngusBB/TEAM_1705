@@ -1,6 +1,6 @@
 clc;close all;
 
-imdsNormal = imageDatastore("All_Images");
+imdsNormal = imageDatastore("All_Detect_Images");
 
 trainingData = combine(imdsNormal);
 %Augmentation
