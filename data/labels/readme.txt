@@ -1,1 +1,1 @@
-txt labels files will create with preprocessing_xml2txt.py
+txt labels files will create by preprocessing_xml2txt.py here
