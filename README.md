@@ -1,6 +1,6 @@
 # TEAM_1705
 
-### requirments
+### Requirments
 	MATLAB: 
 		Image Processing Toolbox=11.5
 		Computer Vision Toolbox=10.2
@@ -26,3 +26,10 @@
 	download the OBJ_Train_Datasets in OBJ_Train_Datasets Folder
 	download the SEG_Train_Datasets in SEG_Train_Datasets Folder
 	download the Train_Images_Normal (https://drive.google.com/drive/folders/1ufKWQl4XOcjvkpYKQCH0BSMU2nmNd2st?usp=sharing) in Train_Images_Normal Folder
+	download the binary masks (https://drive.google.com/drive/folders/1B2JP8a_fJszJOGK_m9beChNJZKCJ5B_9?usp=sharing) in augmentation/mask Folder
+
+### Usage
+###### first train
+	1. copy OBJ_Train_Datasets/Train_Images' images in data/images Folder
+	2. run preprocessing_xml2txt.py(txt labels files should create in data/labels Folder)
+	3. 
