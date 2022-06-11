@@ -1,0 +1,5 @@
+path: ../data
+train: images
+val: images
+nc: 1
+names: ['STAS']
