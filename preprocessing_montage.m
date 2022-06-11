@@ -4,7 +4,6 @@ segDS = imageDatastore("OBJ_Train_Datasets/Training_Image_Seg");
 bothDS = imageDatastore("OBJ_Train_Datasets/Training_Image_Both");
 
 
-
 Inum = numel(oringinDS.Files);
 
 for i = 1 : Inum
