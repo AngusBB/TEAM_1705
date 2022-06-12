@@ -32,4 +32,6 @@
 ###### first train
 	1. copy OBJ_Train_Datasets/Train_Images' images in data/images Folder
 	2. run preprocessing_xml2txt.py(txt labels files should create in data/labels Folder)
-	3. 
+	3. terminal: cd yolov5
+		     python train.py --img 1716 --batch 8 --epoch 500 --data dataset.yaml --weights yolov5s6.pt
+		     python detect.py --weights model/best1.pt --img 960,1720 --conf_thres 0.05 --max-det 200 --augment --iou_thres 0.25
