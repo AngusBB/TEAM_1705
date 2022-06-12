@@ -2,7 +2,7 @@ labelpath = "runs/detect/exp1";
 Txtfile = dir(labelpath + "/*.txt");
 Tnum = length(Txtfile);
 
-ansfileID = fopen(labelpath + append('/answer.json'), 'w');
+ansfileID = fopen("answer.json", 'w');
 
 fprintf(ansfileID, '{');
 
